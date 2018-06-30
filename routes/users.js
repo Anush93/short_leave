@@ -4,9 +4,16 @@ const User = require("../models/user");
 const jwt = require('jsonwebtoken');
 const config = require("../config/database")
 const passport = require('passport');
+
+
+const app = express();
+var bodyParser = require('body-parser');
+
+app.use(bodyParser());
+
 router.post("/register",function(req,res){
     const newUser = new User({
-        username:req.body.name,
+        username:req.body.username,
         email:req.body.email,
         password:req.body.password
 
@@ -32,6 +39,7 @@ router.post("/login",function(req,res){
 
         if (!user){
              res.json({state:false,msg:"no user found"});
+             return false;
         }
         User.passwordCheck(password,user.password,function(err,match){
         if(err) throw err;
@@ -39,7 +47,7 @@ router.post("/login",function(req,res){
             const token = jwt.sign(user.toJSON(),config.secret,{expiresIn:86400});
              res.json({
                  state:true,
-                 token:"JWT "+ token,
+                 token:"Bearer "+ token,
                  user:{
                      id:user._id,
                      username:user.username,
@@ -47,15 +55,20 @@ router.post("/login",function(req,res){
 
 
                  }
+                 
 
 
              });
+
+        }
+        else{
+            res.json({state:false,msg:"password does not match"});
         }
     });
 });
 });
 
-router.post('/profile', passport.authenticate('jwt', { session: false }),
+router.get('/profile', passport.authenticate('jwt', { session: false }),
     function(req, res) {
         res.json({user:req.user});
     }
